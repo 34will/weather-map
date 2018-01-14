@@ -1,22 +1,28 @@
 {
-  "name": "electron-quick-start",
+  "name": "weather-map",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "An Electron app that shows https://earth.nullschool.net/#current/wind in a frameless window.",
+  "author": "34will",
+  "license": "MIT",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
-  "repository": "https://github.com/electron/electron-quick-start",
-  "keywords": [
-    "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo"
-  ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "~1.7.8"
+    "asar": "^0.14.0",
+    "electron-builder": "~19.52.1"
+  },
+  "build": {
+    "appId": "uk.co.34will.weathermap",
+    "win": {
+      "target": "portable"
+    }
+  },
+  "dependencies": {
+    "electron": "~1.7.8",
+    "electron-rebuild": "^1.7.3"
   }
 }
