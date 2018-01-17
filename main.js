@@ -10,15 +10,46 @@ const NativeImage = electron.nativeImage;
 let mainWindow = null;
 let tray = null;
 
+const argumentRegex = /--(.*?)=(.*)/;
+
 function createWindow () {
-	mainWindow = new BrowserWindow({x: 972, y: 245, width: 438, height: 444, frame: false, resizeable: false, skipTaskbar: true, minimizable: false});
+	const arguments = process
+		.argv
+		.filter(function (argument) {
+			return argumentRegex.test(argument);
+		})
+		.map(function (argument) {
+			return argument
+				.match(argumentRegex)
+				.splice(1);
+		});
+	
+	const xArgument = arguments.find(function (argument) {
+		return argument[0] == "x";
+	});
+	let x = 0;
+	if (xArgument)
+		x = parseInt(xArgument[1]);
+	if (isNaN(x))
+		x = 0;
+	
+	const yArgument = arguments.find(function (argument) {
+		return argument[0] == "y";
+	});
+	let y = 0;
+	if (yArgument)
+		y = parseInt(yArgument[1]);
+	if (isNaN(y))
+		y = 0;
+	
+	mainWindow = new BrowserWindow({x: x, y: y, width: 438, height: 444, frame: false, resizeable: false, skipTaskbar: true, minimizable: false});
 
 	mainWindow.loadURL("https://earth.nullschool.net/#current/wind/surface/level/patterson=-2.89,54.14,1705");
 
 	mainWindow.on("closed", function () {
 		mainWindow = null;
 	});
-
+	
 	mainWindow.setMenu(null);
 	mainWindow.setIgnoreMouseEvents(true);
 
