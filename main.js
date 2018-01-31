@@ -10,6 +10,7 @@ const NativeImage = electron.nativeImage;
 const argumentRegex = /--(.*?)=(.*)/;
 
 let mainWindow = null;
+let tray = null;
 
 function GetNumericArgument(arguments, name, def) {
 	def = def || 0;
@@ -65,7 +66,7 @@ function CreateWindow () {
 
 	const iconPath = path.join(__dirname, 'Weather Map.ico');
 	const icon = NativeImage.createFromPath(iconPath);
-	let tray = new Tray(icon);
+	tray = new Tray(icon);
 	const contextMenu = Menu.buildFromTemplate([
 		{label: "Reposition", click() { mainWindow.setBounds(GetBounds(ElectronScreen, x, y, width, height, screen)); }},
 		{label: "Exit", click() { App.quit(); }}
