@@ -6,6 +6,7 @@ const BrowserWindow = electron.BrowserWindow;
 const Menu = electron.Menu;
 const Tray = electron.Tray;
 const NativeImage = electron.nativeImage;
+let ElectronScreen = null;
 
 const argumentRegex = /--(.*?)=(.*)/;
 
@@ -17,10 +18,10 @@ let width = null;
 let height = null;
 let screen = null;
 
-function GetNumericArgument(arguments, name, def) {
+function GetNumericArgument(argumentsArray, name, def) {
     def = def || 0;
 
-    const arg = arguments.find(function (argument) {
+    const arg = argumentsArray.find(function (argument) {
         return argument[0] == name;
     });
     let res = def;
@@ -31,7 +32,7 @@ function GetNumericArgument(arguments, name, def) {
     return res;
 }
 
-function GetBounds(ElectronScreen) {
+function GetBounds() {
     let displays = ElectronScreen.getAllDisplays();
     if (displays.length > screen)
         displays = displays.slice(0, screen);
@@ -46,11 +47,11 @@ function GetBounds(ElectronScreen) {
     return ret;
 }
 
-function Reposition(ElectronScreen) {
-    mainWindow.setBounds(GetBounds(ElectronScreen));
+function Reposition() {
+    mainWindow.setBounds(GetBounds());
 }
 
-function CalculateDisplays(ElectronScreen) {
+function CalculateDisplays() {
     let displays = ElectronScreen.getAllDisplays();
     let displayContextMenuItems = [];
     for (let i = 0; i < displays.length; i++) {
@@ -64,7 +65,7 @@ function CalculateDisplays(ElectronScreen) {
                     x.checked = false;
                 });
                 displayContextMenuItems[i].checked = true;
-                Reposition(ElectronScreen);
+                Reposition();
             }
         });
     }
@@ -74,10 +75,9 @@ function CalculateDisplays(ElectronScreen) {
         }, {
             label: "Reposition",
             click() {
-                Reposition(ElectronScreen);
+                Reposition();
             }
-        },
-        {
+        }, {
             label: "Exit",
             click() {
                 App.quit();
@@ -88,7 +88,7 @@ function CalculateDisplays(ElectronScreen) {
 }
 
 function CreateWindow() {
-    const ElectronScreen = electron.screen;
+    ElectronScreen = electron.screen;
 
     const arguments = process
         .argv
@@ -102,13 +102,16 @@ function CreateWindow() {
         });
 
     ElectronScreen.on("display-added", function () {
-        CalculateDisplays(ElectronScreen);
+        CalculateDisplays();
+        Reposition();
     });
     ElectronScreen.on("display-removed", function () {
-        CalculateDisplays(ElectronScreen);
+        CalculateDisplays();
+        Reposition();
     });
     ElectronScreen.on("display-metrics-changed", function () {
-        CalculateDisplays(ElectronScreen);
+        CalculateDisplays();
+        Reposition();
     });
 
     x = GetNumericArgument(arguments, "x");
@@ -117,7 +120,7 @@ function CreateWindow() {
     height = GetNumericArgument(arguments, "height", 444);
     screen = GetNumericArgument(arguments, "screen", 1);
 
-    let bounds = GetBounds(ElectronScreen);
+    let bounds = GetBounds();
     mainWindow = new BrowserWindow({
         x: bounds.x,
         y: bounds.y,
@@ -144,7 +147,7 @@ function CreateWindow() {
     tray = new Tray(icon);
     tray.setToolTip("Weather Map");
 
-    CalculateDisplays(ElectronScreen);
+    CalculateDisplays();
 }
 
 App.on("ready", CreateWindow);
