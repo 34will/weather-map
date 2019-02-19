@@ -1,5 +1,6 @@
 const electron = require("electron");
 const path = require("path");
+const fs = require("fs");
 
 const App = electron.app;
 const BrowserWindow = electron.BrowserWindow;
@@ -8,15 +9,26 @@ const Tray = electron.Tray;
 const NativeImage = electron.nativeImage;
 let ElectronScreen = null;
 
+const PathSeparator = process.platform == "win32" ? "\\" : "/";
+const AppDataFolder = (process.env.APPDATA || (process.platform == "darwin" ? process.env.HOME + "Library/Preferences" : process.env.HOME + "/.local/share")) + PathSeparator + "WeatherMap" + PathSeparator;
+const ConfigFile = AppDataFolder + "config.json";
+const ConfigFileEncoding = "utf-8";
+const DefaultLayout = {
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    screen: 0
+};
+
 const argumentRegex = /--(.*?)=(.*)/;
 
 let mainWindow = null;
+let parsedArguments = null;
 let tray = null;
-let x = null;
-let y = null;
-let width = null;
-let height = null;
-let screen = null;
+let layouts = null;
+let layout = null;
+let layoutIndex = null;
 
 function GetNumericArgument(argumentsArray, name, def) {
     def = def || 0;
@@ -34,15 +46,15 @@ function GetNumericArgument(argumentsArray, name, def) {
 
 function GetBounds() {
     let displays = ElectronScreen.getAllDisplays();
-    if (displays.length > screen)
-        displays = displays.slice(0, screen);
+    if (displays.length > layout.screen)
+        displays = displays.slice(0, layout.screen);
 
     let lastDisplay = displays.slice(-1)[0];
     let ret = {
-        x: lastDisplay.bounds.x + x,
-        y: lastDisplay.bounds.y + y,
-        width: width,
-        height: height
+        x: (lastDisplay ? lastDisplay.bounds.x : 0) + layout.x,
+        y: (lastDisplay ? lastDisplay.bounds.y : 0) + layout.y,
+        width: layout.width,
+        height: layout.height
     };
     return ret;
 }
@@ -70,8 +82,37 @@ function CalculateDisplays() {
         });
     }
 
-    const contextMenu = Menu.buildFromTemplate(displayContextMenuItems.concat([{
-            type: "separator"
+    let layoutContextMenuItems = [];
+    for (let i = 0; i < layouts.length; i++) {
+        layoutContextMenuItems.push({
+            type: "radio",
+            label: "Layout #" + (i + 1) + " (" + layouts[i].name + ")",
+            checked: i == layoutIndex,
+            click() {
+                layoutIndex = i;
+                layout = layouts[layoutIndex];
+                layoutContextMenuItems.forEach(function (x) {
+                    x.checked = false;
+                });
+                layoutContextMenuItems[i].checked = true;
+                Reposition();
+            }
+        });
+    }
+
+    let menuItems = displayContextMenuItems.concat([{ type: "separator" }]);
+    if (layoutContextMenuItems.length > 0) {
+        menuItems = menuItems
+            .concat(layoutContextMenuItems)
+            .concat([{ type: "separator" }]);
+    }
+
+    const contextMenu = Menu.buildFromTemplate(menuItems.concat([{
+            label: "Reload Config",
+            click() {
+                ReadConfigFile();
+                Reposition();
+            }
         }, {
             label: "Reposition",
             click() {
@@ -87,10 +128,33 @@ function CalculateDisplays() {
     tray.setContextMenu(contextMenu);
 }
 
+function ReadConfigFile() {
+    if (!fs.existsSync(AppDataFolder))
+        fs.mkdir(AppDataFolder);
+    if (!fs.existsSync(ConfigFile))
+        fs.writeFileSync(ConfigFile, "{}", ConfigFileEncoding);
+    let config = JSON.parse(fs.readFileSync(ConfigFile, ConfigFileEncoding)) || {};
+
+    layouts = config.layouts || [];
+    layoutIndex = GetNumericArgument(parsedArguments, "layout-index", config.layoutIndex != null && config.layoutIndex != undefined ? config.layoutIndex : -1);
+    for (let i = 0; i < layouts.length; i++)
+        layouts[i] = Object.assign(Object.assign({}, DefaultLayout), layouts[i]);
+
+    layout = Object.assign({}, DefaultLayout);
+    if (layoutIndex >= 0 && layoutIndex < layouts.length)
+        layout = layouts[layoutIndex];
+
+    x = GetNumericArgument(parsedArguments, "x", layout.x);
+    y = GetNumericArgument(parsedArguments, "y", layout.y);
+    width = GetNumericArgument(parsedArguments, "width", layout.width);
+    height = GetNumericArgument(parsedArguments, "height", layout.height);
+    screen = GetNumericArgument(parsedArguments, "screen", layout.screen);
+}
+
 function CreateWindow() {
     ElectronScreen = electron.screen;
 
-    const arguments = process
+    parsedArguments = process
         .argv
         .filter(function (argument) {
             return argumentRegex.test(argument);
@@ -114,11 +178,7 @@ function CreateWindow() {
         Reposition();
     });
 
-    x = GetNumericArgument(arguments, "x");
-    y = GetNumericArgument(arguments, "y");
-    width = GetNumericArgument(arguments, "width", 438);
-    height = GetNumericArgument(arguments, "height", 444);
-    screen = GetNumericArgument(arguments, "screen", 1);
+    ReadConfigFile();
 
     let bounds = GetBounds();
     mainWindow = new BrowserWindow({
