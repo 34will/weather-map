@@ -12,9 +12,9 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
-    "asar": "^0.14.0",
-    "electron": "~1.7.8",
-    "electron-builder": "~19.52.1"
+    "asar": "^0.14.6",
+    "electron": "~4.0.5",
+    "electron-builder": "~20.38.5"
   },
   "build": {
     "appId": "uk.co.34will.weathermap",
@@ -22,6 +22,5 @@
       "target": "portable"
     }
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
