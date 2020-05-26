@@ -44,8 +44,14 @@ function GetNumericArgument(argumentsArray, name, def) {
     return res;
 }
 
+function GetDisplays() {
+    return ElectronScreen
+        .getAllDisplays()
+        .sort((a, b) => a.bounds.x - b.bounds.x);
+}
+
 function GetBounds() {
-    let displays = ElectronScreen.getAllDisplays();
+    let displays = GetDisplays();
     if (displays.length > layout.screen)
         displays = displays.slice(0, layout.screen);
 
@@ -64,7 +70,7 @@ function Reposition() {
 }
 
 function CalculateDisplays() {
-    let displays = ElectronScreen.getAllDisplays();
+    let displays = GetDisplays();
     let displayContextMenuItems = [];
     for (let i = 0; i < displays.length; i++) {
         displayContextMenuItems.push({
