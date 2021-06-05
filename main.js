@@ -125,6 +125,11 @@ function CalculateDisplays() {
                 Reposition();
             }
         }, {
+            label: "Reload",
+            click() {
+                mainWindow.reload();
+            }
+        }, {
             label: "Exit",
             click() {
                 App.quit();
